@@ -1,14 +1,21 @@
 import { createClient } from '@supabase/supabase-js';
-import { Resend } from 'resend';
 import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
+import nodemailer from 'nodemailer';
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_KEY!
 );
 
-const resend = new Resend(process.env.RESEND_API_KEY!);
+// Configure Gmail SMTP transporter
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER!,
+    pass: process.env.GMAIL_APP_PASSWORD!,
+  },
+});
 
 interface Fact {
   category: string;
@@ -118,17 +125,15 @@ export async function GET() {
     // Extract email addresses
     const recipients = emailRecords.map((record) => record.email);
 
-    // Send email to all recipients
-    const { data, error } = await resend.emails.send({
-      from: 'Facts of the Day <onboarding@resend.dev>', // Replace with your verified domain
-      to: recipients,
+    // Send email to all recipients using Gmail SMTP
+    const mailOptions = {
+      from: `"Daily Facts" <${process.env.GMAIL_USER}>`,
+      to: recipients.join(', '),
       subject: 'Facts of the Day - Akash Claude Build',
       text: emailBody,
-    });
+    };
 
-    if (error) {
-      throw new Error(`Resend error: ${error.message}`);
-    }
+    const info = await transporter.sendMail(mailOptions);
 
     // Store the sent facts in the database
     const factsToStore = facts.map(fact => ({
@@ -149,7 +154,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       message: `Email sent to ${recipients.length} recipients`,
-      emailId: data?.id,
+      messageId: info.messageId,
       factsStored: !insertError,
     });
   } catch (error) {
