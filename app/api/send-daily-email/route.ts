@@ -20,6 +20,7 @@ const transporter = nodemailer.createTransport({
 interface Fact {
   category: string;
   fact: string;
+  source: string;
 }
 
 async function generateFacts(recentFacts: string[] = []): Promise<Fact[]> {
@@ -27,7 +28,25 @@ async function generateFacts(recentFacts: string[] = []): Promise<Fact[]> {
     apiKey: process.env.ANTHROPIC_API_KEY,
   });
 
-  let prompt = `Generate exactly 10 interesting and diverse facts. Each fact should be from one of these categories: Politics, History, Business, Parenting, or Financial Wellness.`;
+  let prompt = `You are creating a daily email digest for successful entrepreneurs aged 30-35 who:
+- Earn $300K+ annually with multiple income streams
+- Are thinking about starting a family or recently had kids
+- Actively manage LLCs, real estate, and angel investments
+- Optimize tax strategies and wealth management
+- Prioritize health, longevity, and peak performance
+
+Generate exactly 10 highly actionable and relevant facts across these categories:
+1. **Tax & LLC Strategy** - Tax optimization, LLC structures, asset protection, business deductions
+2. **Real Estate Investing** - Commercial/residential investing, 1031 exchanges, market trends, REITs
+3. **Investing & Wealth** - Angel investing, 401Ks, IRAs, portfolio allocation, robo-advisors, valuation
+4. **Parenting & Family** - Raising kids, child development, work-life balance, family happiness, financial planning for children
+5. **Health & Wellness** - Longevity strategies, fitness optimization, mental health, sleep, biohacking
+
+Each fact must:
+- Be directly actionable or insightful for this demographic
+- Include a credible source (publication, study, or expert)
+- Be concise (2-3 sentences max)
+- Provide specific numbers, strategies, or frameworks when possible`;
 
   if (recentFacts.length > 0) {
     prompt += `\n\nIMPORTANT: Do NOT repeat or closely paraphrase any of these recently sent facts:\n${recentFacts.map((f, i) => `${i + 1}. ${f}`).join('\n')}`;
@@ -36,13 +55,15 @@ async function generateFacts(recentFacts: string[] = []): Promise<Fact[]> {
   prompt += `\n\nReturn the response in this exact JSON format:
 {
   "facts": [
-    {"category": "Politics", "fact": "..."},
-    {"category": "History", "fact": "..."},
-    ...
+    {"category": "Tax & LLC Strategy", "fact": "...", "source": "Source Name"},
+    {"category": "Real Estate Investing", "fact": "...", "source": "Source Name"},
+    {"category": "Investing & Wealth", "fact": "...", "source": "Source Name"},
+    {"category": "Parenting & Family", "fact": "...", "source": "Source Name"},
+    {"category": "Health & Wellness", "fact": "...", "source": "Source Name"}
   ]
 }
 
-Make sure to include facts from all 5 categories, with a good distribution. Each fact should be concise (1-2 sentences) and interesting.`;
+Make sure to include exactly 2 facts from each of the 5 categories (total 10 facts).`;
 
   const message = await anthropic.messages.create({
     model: 'claude-sonnet-4-5-20250929',
@@ -71,13 +92,24 @@ Make sure to include facts from all 5 categories, with a good distribution. Each
 }
 
 function formatEmailBody(facts: Fact[]): string {
-  let body = 'Here are your daily facts:\n\n';
+  let body = 'Your Daily Wealth & Life Insights\n';
+  body += '================================\n\n';
+
+  body += 'Hey, this is Akash!\n\n';
+  body += 'These are topics I think about every day as I work to get smarter in business, investing, health, and life. ';
+  body += 'I\'m sharing these insights with you because I believe we grow together. ';
+  body += 'Hope this makes your day a little better and you learn something new.\n\n';
+  body += '1% better every day compounds. Let\'s build.\n\n';
+  body += '---\n\n';
 
   facts.forEach((fact, index) => {
-    body += `${index + 1}. [${fact.category}] ${fact.fact}\n\n`;
+    body += `${index + 1}. [${fact.category}]\n`;
+    body += `${fact.fact}\n`;
+    body += `Source: ${fact.source}\n\n`;
   });
 
-  body += '\n---\nHave a great day!\n';
+  body += '---\n';
+  body += 'Build wealth. Grow family. Live smart.\n';
 
   return body;
 }
@@ -88,6 +120,9 @@ export async function GET() {
     const { data: emailRecords, error: supabaseError } = await supabase
       .from('emails')
       .select('email');
+
+    console.log('Fetched emails from Supabase:', emailRecords);
+    console.log('Number of emails:', emailRecords?.length);
 
     if (supabaseError) {
       throw new Error(`Supabase error: ${supabaseError.message}`);
@@ -127,9 +162,9 @@ export async function GET() {
 
     // Send email to all recipients using Gmail SMTP
     const mailOptions = {
-      from: `"Daily Facts" <${process.env.GMAIL_USER}>`,
+      from: `"Daily Wealth & Life Insights" <${process.env.GMAIL_USER}>`,
       to: recipients.join(', '),
-      subject: 'Facts of the Day - Akash Claude Build',
+      subject: 'Your Daily Wealth & Life Insights',
       text: emailBody,
     };
 
@@ -139,6 +174,7 @@ export async function GET() {
     const factsToStore = facts.map(fact => ({
       fact: fact.fact,
       category: fact.category,
+      source: fact.source,
       sent_at: new Date().toISOString(),
     }));
 

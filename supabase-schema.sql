@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS sent_facts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   fact TEXT NOT NULL,
   category VARCHAR(100) NOT NULL,
+  source VARCHAR(255),
   sent_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
