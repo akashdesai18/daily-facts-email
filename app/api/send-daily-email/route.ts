@@ -115,18 +115,8 @@ function formatEmailBody(facts: Fact[]): string {
 }
 
 export async function GET(request: Request) {
-  console.log('=== FUNCTION INVOKED ===');
-  console.log('Request URL:', request.url);
-  console.log('Request headers:', Object.fromEntries(request.headers.entries()));
-
-  // Immediate response test - remove this after testing
-  return NextResponse.json({
-    test: 'Function is being called',
-    timestamp: new Date().toISOString(),
-    url: request.url,
-  });
-
   console.log('=== CRON JOB STARTED ===');
+  console.log('Request from:', request.headers.get('user-agent'));
   console.log('Environment check:', {
     hasAnthropicKey: !!process.env.ANTHROPIC_API_KEY,
     hasGmailUser: !!process.env.GMAIL_USER,
