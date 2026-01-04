@@ -167,7 +167,7 @@ export async function GET(request: Request) {
       .order('sent_at', { ascending: false });
 
     if (factsError) {
-      console.warn('Error fetching recent facts:', factsError.message);
+      console.warn('Error fetching recent facts:', factsError?.message || 'Unknown error');
     }
 
     const recentFacts = recentFactsData?.map(f => f.fact) || [];
@@ -182,7 +182,7 @@ export async function GET(request: Request) {
     console.log('Email body formatted');
 
     // Extract email addresses
-    const recipients = emailRecords.map((record) => record.email);
+    const recipients = emailRecords?.map((record) => record.email) || [];
     console.log('Sending to recipients:', recipients);
 
     // Send email to all recipients using Gmail SMTP
@@ -209,7 +209,7 @@ export async function GET(request: Request) {
       .insert(factsToStore);
 
     if (insertError) {
-      console.error('Error storing facts:', insertError.message);
+      console.error('Error storing facts:', insertError?.message || 'Unknown error');
       // Don't fail the request if storing facts fails
     }
 
@@ -219,12 +219,13 @@ export async function GET(request: Request) {
       messageId: info.messageId,
       factsStored: !insertError,
     });
-  } catch (error) {
+  } catch (err) {
+    const error = err as Error;
     console.error('Error sending daily email:', error);
     return NextResponse.json(
       {
         error: 'Failed to send daily email',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        details: error?.message || String(err),
       },
       { status: 500 }
     );
