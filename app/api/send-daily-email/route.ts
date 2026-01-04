@@ -146,7 +146,7 @@ export async function GET(request: Request) {
     console.log('Number of emails:', emailRecords?.length);
 
     if (supabaseError) {
-      throw new Error(`Supabase error: ${supabaseError.message}`);
+      throw new Error(`Supabase error: ${supabaseError?.message || 'Unknown error'}`);
     }
 
     if (!emailRecords || emailRecords.length === 0) {
