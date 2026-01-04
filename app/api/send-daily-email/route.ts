@@ -115,8 +115,18 @@ function formatEmailBody(facts: Fact[]): string {
 }
 
 export async function GET() {
+  console.log('=== CRON JOB STARTED ===');
+  console.log('Environment check:', {
+    hasAnthropicKey: !!process.env.ANTHROPIC_API_KEY,
+    hasGmailUser: !!process.env.GMAIL_USER,
+    hasGmailPassword: !!process.env.GMAIL_APP_PASSWORD,
+    hasSupabaseUrl: !!process.env.SUPABASE_URL,
+    hasSupabaseKey: !!process.env.SUPABASE_KEY,
+  });
+
   try {
     // Fetch all email addresses from Supabase
+    console.log('Fetching emails from Supabase...');
     const { data: emailRecords, error: supabaseError } = await supabase
       .from('emails')
       .select('email');
@@ -152,15 +162,20 @@ export async function GET() {
     const recentFacts = recentFactsData?.map(f => f.fact) || [];
 
     // Generate facts using Claude, avoiding recent ones
+    console.log('Generating facts with Claude...');
     const facts = await generateFacts(recentFacts);
+    console.log('Facts generated:', facts.length);
 
     // Format email body
     const emailBody = formatEmailBody(facts);
+    console.log('Email body formatted');
 
     // Extract email addresses
     const recipients = emailRecords.map((record) => record.email);
+    console.log('Sending to recipients:', recipients);
 
     // Send email to all recipients using Gmail SMTP
+    console.log('Sending email via Gmail SMTP...');
     const mailOptions = {
       from: `"Daily Wealth & Life Insights" <${process.env.GMAIL_USER}>`,
       to: recipients.join(', '),
