@@ -149,7 +149,7 @@ export async function GET(request: Request) {
       throw new Error(`Supabase error: ${supabaseError?.message || 'Unknown error'}`);
     }
 
-    if (!emailRecords || emailRecords.length === 0) {
+    if (!emailRecords || emailRecords?.length === 0) {
       return NextResponse.json(
         { message: 'No email addresses found in database' },
         { status: 200 }
